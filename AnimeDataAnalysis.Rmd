@@ -1,0 +1,320 @@
+---
+title: "Anime Data Analysis"
+author: "Lovepreet Singh 153012"
+output: 
+  revealjs::revealjs_presentation:
+    theme: beige
+    center: true
+    reveal_options: 
+      controls: false
+    pdf: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+## INTRODUZIONE
+Gli anime stanno diventando sempre più popolari tra i giovani e per molti hanno sostituito i cartoni animati.
+
+<blockquote style="font-size:0.8em" cite="https://it.wikipedia.org/wiki/Anime">
+  Anime è un termine con cui si indicano le opere di animazione di produzione giapponese.
+  In Giappone invece il lemma designa tutti i tipi di animazione, sia quelli prodotti in patria sia quelli importati dall'estero.
+</blockquote>
+
+## DATASET USATO
+
+Il <a href="https://www.kaggle.com/datasets/andreuvallhernndez/myanimelist">dataset</a> utilizzato contiene dati presi da <a href="https://myanimelist.net/">MyAnimeList</a> e raccoglie ~24 mila anime.
+
+```{r, echo = FALSE, include=FALSE }
+library(dplyr)
+library(tidyverse)
+library(RColorBrewer)
+library(gganimate)
+library(networkD3)
+library(htmlwidgets)
+library(plotly)
+library(treemap)
+library(treemapify)
+
+# Leggo il file csv e sostituisco i valori vuoti con NA
+anime <- read.csv("anime.csv", na.strings=c("", " ", "[]", "NA"))
+anime <- as_tibble(anime)
+```
+
+
+## ANIME NEGLI ANNI
+```{r, echo = FALSE, include=FALSE}
+anime$year <- as.numeric(anime$start_year)
+
+# Raggruppo gli anime per anno e tengo solo quelli dopo il 1970
+anime_by_year<- anime %>%
+  group_by(year, type) %>%
+  filter(year >= 1990)
+
+```
+
+```{r, echo = FALSE}
+# Visualizzo istogramma degli anime usciti per anno, divisi per tipo
+
+p <- ggplot(anime_by_year, aes(x = year, fill = type)) +
+  geom_histogram(binwidth = 1, col="black") +
+  scale_x_continuous(breaks=seq(1990,2025,5))
+
+
+p + scale_fill_brewer(palette = "YlOrRd") +
+  theme_minimal() + 
+  theme(legend.position = "top")+
+  labs(title = "Anime in the years",
+       y = "Number of anime",
+       x = "Years")
+```
+
+## ANIME ANCORA TRASMESSI
+
+```{r, echo = FALSE, include=FALSE}
+# Filtro gli anime ancora trasmessi
+anime_ongoing <- anime %>%
+  filter(status == "currently_airing")
+
+anime_status <- anime %>%
+  group_by(year, status) %>%
+  arrange (desc(year)) %>%
+  filter(year >= 1990, status == "currently_airing")
+
+```
+
+```{r, echo = FALSE}
+
+# Creo in istogramma animato
+p <- ggplot(anime_status, aes(x = year, fill = status)) +
+  geom_histogram(binwidth = .5) +
+  scale_x_continuous(breaks=seq(1990,2025,5)) + # intervalli di 5 anni
+  scale_fill_brewer(palette = "Set1") +
+  theme_minimal() + 
+  theme(legend.position = "none") +
+  transition_states(year, wrap = FALSE) + # serve per animazione
+  shadow_mark(past = TRUE, future = FALSE) + # matiene valori passati nell'animazione
+  labs(title = "Ongoing anime",
+       y = "Number of anime",
+       x = "Years")
+
+animate(p, fps = 25, duration = 10, end_pause = 100)
+```
+
+## DENSITÀ DELLE RECENSIONI
+
+```{r, echo = FALSE}
+
+# Toglie i valori NA da 'score'
+anime_score <- anime %>%
+  drop_na(score)
+
+# Crea un grafico per visualizzare la densità di 'score'
+ggplot(anime_score, aes(x = score)) +
+  geom_density(fill = "#FD8D3C", color = "black", alpha = 0.7) +
+  labs(title = "Density Plot of Scores", x = "Score", y ="Density") +
+  theme_minimal()
+
+```
+
+## NUMERO RECENSIONI INFLUENZA IL VOTO?
+```{r, echo = FALSE}
+scores <- anime %>% 
+  filter(!is.na(score))
+
+scores <- scores  %>%
+  filter(scored_by >= 500)
+
+# Scatter plot per far vedere la relazione tra numero recensioni (scored_by) e score
+ggplot(anime %>% filter(!is.na(score)), aes(y = scored_by, x = score)) +
+  geom_point(aes(color = score)) +
+  scale_color_gradient(low = "yellow", high = "red") +
+  labs(title = "Relationship between Number of Reviews and Score",
+       y = "Number of Reviews",
+       x = "Score") +
+  theme_minimal() +
+  scale_x_continuous(labels = scales::number_format(scale = 1e0, accuracy = 0.01), breaks = seq(0, 10, by = 0.5)) +
+  scale_y_continuous(labels = scales::number_format(scale = 1e-6, scale_suffix = "M")) +  # Tolgo notazione scientifica da y e visualizzo in milioni
+  geom_smooth(formula = y ~ x, method = "loess", se = FALSE, aes(group = NULL), linewidth = .7)  # "loess" for a smoother, non-linear trend line
+  
+
+```
+
+
+
+## I GENERI PIÙ POPOLARI
+
+```{r, echo = FALSE, include=FALSE}
+
+# Explode genres per associare agli anime un singolo genere alla volta
+anime_genres <- anime %>%
+  mutate(genres = gsub("\\[|\\]|'", "", genres)) %>%   # gsub per togliere certi caratteri
+  separate_rows(genres, sep = ',\\s*')                   # divido genres in più righe
+
+# Group by genere and sommo i membri per ogni genere e gli metto in ordine decrescente
+genre_counts <- anime_genres %>%
+  group_by(genres) %>%
+  summarise(total_members = sum(members)) %>%
+  arrange(desc(total_members)) %>%
+  top_n(10)
+
+```
+
+```{r, echo = FALSE}
+ggplot(genre_counts, aes(x = reorder(genres, -total_members), y = total_members)) +
+  geom_bar(stat = "identity", fill = "#FD8D3C") +
+  labs(title = "Genre Comparison by Interested Members",
+       x = "Genres",
+       y = "Members in millions") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(labels = scales::number_format(scale = 1e-6, scale_suffix = "M"))  # Tolgo notazione scientifica da y e visualizzo in milioni
+  
+```
+
+## GENERE DEI TOP 10
+```{r, echo = FALSE}
+# Explode genres per associare agli anime un singolo genere alla volta
+anime_genres <- anime %>%
+  arrange(desc(score)) %>%
+  head(10) %>%
+  mutate(genres = gsub("\\[|\\]|'", "", genres)) %>%  # gsub per togliere certi caratteri
+  separate_rows(genres, sep = ',\\s*') %>%
+  filter(type == "tv")
+
+# Crea tabella per i nodi
+nodes <- data.frame(
+  name = unique(c(anime_genres$title, anime_genres$genres))
+)
+
+
+# Crea tabella per i link
+links <- anime_genres %>%
+  mutate(source = match(title, nodes$name) - 1,
+         target = match(genres, nodes$name) - 1,
+         value = 1) %>%
+  select(source, target, value)
+
+links <- as.data.frame(links)
+
+# Creo Sankey plot per i top 10
+sankey_plot <- sankeyNetwork(Links = links, Nodes = nodes, Source = 'source', Target = 'target', Value = 'value', 
+              NodeID = 'name', units = 'Titles by Genre', width = 900, height = 500) %>%
+  htmlwidgets::onRender("
+    function(el, x) {
+      d3.selectAll('.node text, .link.title text').style('fill', 'black').style('font-size', '18px');
+    }
+  ")
+
+
+# Salvo Sankey plot in un file HTML, avevo avuto problemi nella visualizzazione
+saveWidget(sankey_plot, "resources/sankey_plot.html", background = "#FBF8E8")
+```
+
+<iframe width='1000px' height='500' src='resources/sankey_plot.html' scrolling="no">
+  <p>Your browser does not support iframes</p>
+</iframe>
+
+
+## TOP 10 GENERI
+```{r, echo = FALSE}
+# Considero solamente i generi che hanno più di 1000 recensioni
+anime_genres <- anime %>%
+  mutate(genres = gsub("\\[|\\]|'", "", genres)) %>%
+  separate_rows(genres, sep = ',\\s*') %>%
+  group_by(genres) %>%
+  filter(sum(scored_by) > 1000) %>%
+  ungroup() %>%
+  drop_na()
+
+# Calcolo la media per genere e ordino in modo decrescente
+average_scores <- anime_genres %>%
+  group_by(genres) %>%
+  summarize(average_score = mean(score, na.rm = TRUE)) %>%
+  arrange(desc(average_score))
+
+# Seleziono i top 10
+top_10_genres <- head(average_scores, 10)
+
+# Calcolo media totale dei voti
+total_average <- mean(anime$score, na.rm = TRUE)
+
+# Creo lollipop plot, con una linea rossa indico la media fatta considerando tutti i score.
+ggplot(top_10_genres, aes(x = reorder(genres, average_score), y = average_score)) +
+  geom_segment(aes(xend = reorder(genres, average_score), yend = 0), color = "#FD8D3C") +
+  geom_hline(yintercept = total_average, color = "red", linetype = "dashed", linewidth = 1) +  # Linea per la media
+  geom_point(color = "#FD8D3C", size = 3) +
+  annotate("text", x = 1, y = total_average, label = round(total_average, 2), 
+           color = "red", size = 4, hjust = 0, vjust = -0.5) +  # Scrivo la media in rosso
+  labs(x = "Genre", y = "Average Score") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+## DISTRIBUZIONE RECENSIONI PER GENERE
+```{r, echo = FALSE}
+# Filter the anime data for the top 10 genres
+filtered_genres <- anime %>%
+  mutate(genres = gsub("\\[|\\]|'", "", genres)) %>%
+  separate_rows(genres, sep = ',\\s*') %>%
+  semi_join(top_10_genres, by = "genres") %>%   # Filtra i dati e mantiene solo i top 10
+  drop_na()
+
+# Create a violin plot for the distribution of scores for the top genres
+ggplot(filtered_genres, aes(x = reorder(genres, score), y = score, fill = genres)) +
+  geom_violin(trim = FALSE) +
+  labs(title = "Reviews Distribution of Top Genres",
+       x = "Genre",
+       y = "Score") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none")
+```
+
+## FONTI PIÙ POPOLARI
+```{r, echo = FALSE}
+# Tolgo valori NA
+anime_source <- anime %>%
+  filter(!is.na(source))
+
+# Conto il numero di anime per ogni fonte
+source_counts <- anime_source %>%
+  group_by(source) %>%
+  summarize(title_count = n()) %>%
+  arrange(desc(title_count))
+
+# Divido per il numero totale di anime per vedere quanto spazio occupano nel treemap
+total_titles <- sum(source_counts$title_count)
+source_counts$proportion <- source_counts$title_count / total_titles
+
+# Creo treemap usando geom_treemap, uso proportion come area dei rettangoli, source per colorare
+ggplot(source_counts, aes(area = proportion, fill = source, label = source)) +
+  geom_treemap() +
+  geom_treemap_text(    # aggiunge testo
+    place = "middle", 
+    reflow = TRUE
+  ) +
+  labs(title = "Number of Anime by Source") +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+## DISTRIBUZIONE RECENSIONI IN BASE ALLA FONTE
+```{r, echo = FALSE}
+
+# Tolgo i valori NA da score e source
+filtered_data <- anime %>%
+  filter(!is.na(score) & !is.na(source))
+
+# Creo violin plot
+ggplot(filtered_data, aes(x = source, y = score, fill = source)) +
+  geom_violin() +
+  labs(title = "Reviews Distribution by Source",
+       x = "Source",
+       y = "Score") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "none") 
+
+```
+
+## GRAZIE PER L'ATTENZIONE
