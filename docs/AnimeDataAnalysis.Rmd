@@ -4,10 +4,10 @@ author: "Lovepreet Singh 153012"
 output: 
   revealjs::revealjs_presentation:
     theme: beige
+    transition: slide
     center: true
     reveal_options: 
       controls: false
-    pdf: default
 ---
 
 ```{r setup, include=FALSE}
@@ -318,3 +318,5 @@ ggplot(filtered_data, aes(x = source, y = score, fill = source)) +
 ```
 
 ## GRAZIE PER L'ATTENZIONE
+
+Lovepreet Singh <br> 153012
