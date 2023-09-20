@@ -20,7 +20,7 @@ knitr::opts_chunk$set(echo = FALSE)
 Gli anime stanno diventando sempre più popolari tra i giovani e per molti hanno sostituito i cartoni animati.
 
 <blockquote style="font-size:0.8em" cite="https://it.wikipedia.org/wiki/Anime">
-  Anime è un termine con cui si indicano le opere di animazione di produzione giapponese.
+  Anime è un termine con cui si indicano le opere di animazione di produzione giapponese. <br>
   In Giappone invece il lemma designa tutti i tipi di animazione, sia quelli prodotti in patria sia quelli importati dall'estero.
 </blockquote>
 
