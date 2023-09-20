@@ -5,6 +5,7 @@ output:
   revealjs::revealjs_presentation:
     theme: beige
     center: true
+    transition: slide
     reveal_options: 
       controls: false
     pdf: default
@@ -318,3 +319,4 @@ ggplot(filtered_data, aes(x = source, y = score, fill = source)) +
 ```
 
 ## GRAZIE PER L'ATTENZIONE
+Lovepreet Singh <br> 153012
