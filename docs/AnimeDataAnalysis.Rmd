@@ -20,13 +20,12 @@ knitr::opts_chunk$set(echo = FALSE)
 Gli anime stanno diventando sempre più popolari tra i giovani e per molti hanno sostituito i cartoni animati.
 
 <blockquote style="font-size:0.8em" cite="https://it.wikipedia.org/wiki/Anime">
-  Anime è un termine con cui si indicano le opere di animazione di produzione giapponese. <br>
-  In Giappone invece il lemma designa tutti i tipi di animazione, sia quelli prodotti in patria sia quelli importati dall'estero.
+  Anime è un termine che indica le opere di animazione giapponese, in Giappone include anche quelle estere.
 </blockquote>
 
 ## DATASET USATO
 
-Il <a href="https://www.kaggle.com/datasets/andreuvallhernndez/myanimelist">dataset</a> utilizzato contiene dati presi da <a href="https://myanimelist.net/">MyAnimeList</a> e raccoglie ~24 mila anime.
+Il <a href="https://www.kaggle.com/datasets/andreuvallhernndez/myanimelist">dataset</a> utilizzato contiene dati presi da <a href="https://myanimelist.net/">MyAnimeList</a> e raccoglie ~24 mila anime. <br>
 
 ```{r, echo = FALSE, include=FALSE }
 library(dplyr)
