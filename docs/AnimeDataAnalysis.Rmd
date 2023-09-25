@@ -34,8 +34,6 @@ library(RColorBrewer)
 library(gganimate)
 library(networkD3)
 library(htmlwidgets)
-library(plotly)
-library(treemap)
 library(treemapify)
 
 # Leggo il file csv e sostituisco i valori vuoti con NA
